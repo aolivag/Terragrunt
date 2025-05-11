@@ -7,8 +7,8 @@ param (
     [string]$Environment = "all"
 )
 
-$terragruntPath = "C:\Users\Usuario\Documents\AOG\Terraform\bin\terragrunt.exe"
-$basePath = "C:\Users\Usuario\Documents\AOG\Terraform\terragrunt-nginx\environments"
+$terragruntPath = "C:\Users\Usuario\Desktop\Terragrunt\bin\terragrunt.exe"
+$basePath = "C:\Users\Usuario\Desktop\Terragrunt\terragrunt-nginx\environments"
 
 function Run-TerragruntCommand {
     param (
