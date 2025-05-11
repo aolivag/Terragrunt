@@ -4,7 +4,10 @@ param (
     [string]$Command,
     
     [Parameter(Mandatory=$false)]
-    [string]$Environment = "all"
+    [string]$Environment = "all",
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$AutoApprove = $false
 )
 
 $terragruntPath = "C:\Users\Usuario\Desktop\Terragrunt\bin\terragrunt.exe"
@@ -21,7 +24,14 @@ function Run-TerragruntCommand {
     
     Push-Location $EnvPath
     try {
-        & $terragruntPath $Cmd
+        # Add -auto-approve flag for apply and destroy commands when AutoApprove is specified
+        if ($AutoApprove -and ($Cmd -eq "apply" -or $Cmd -eq "destroy")) {
+            Write-Host "Auto approve enabled for $Cmd command" -ForegroundColor Yellow
+            & $terragruntPath $Cmd -auto-approve
+        } else {
+            & $terragruntPath $Cmd
+        }
+        
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Error running terragrunt $Cmd in $EnvName environment" -ForegroundColor Red
         } else {
