@@ -12,6 +12,11 @@ pipeline {
             choices: ['plan', 'apply', 'destroy'],
             description: 'Terragrunt action to perform'
         )
+        choice(
+            name: 'COMPONENT',
+            choices: ['all', 'nginx', 'postgresql'],
+            description: 'Component to deploy (NGINX, PostgreSQL or both)'
+        )
     }
     
     options {
@@ -68,32 +73,64 @@ pipeline {
 }
 
 def processEnvironment(String env) {
-    dir("${WORKSPACE}\\terragrunt-nginx\\environments\\${env}") {
+    if (params.COMPONENT == 'all' || params.COMPONENT == 'nginx') {
+        processComponent(env, "nginx")
+    }
+    
+    if (params.COMPONENT == 'all' || params.COMPONENT == 'postgresql') {
+        processComponent(env, "postgresql")
+    }
+}
+
+def processComponent(String env, String component) {
+    dir("${WORKSPACE}\\terragrunt-nginx\\environments\\${env}\\${component == 'nginx' ? '' : component}") {
         echo "Current directory: ${pwd()}"
-        echo "Running Terragrunt in ${env} environment"
+        echo "Running Terragrunt for ${component} in ${env} environment"
         
         if (params.ACTION == 'plan' || params.ACTION == 'apply') {
-            echo "Running Terragrunt plan for ${env}"
+            echo "Running Terragrunt plan for ${component} in ${env}"
             def planResult = bat(script: "${WORKSPACE}\\bin\\terragrunt.exe plan", returnStatus: true)
             if (planResult != 0) {
-                error "Terragrunt plan failed for ${env}"
+                error "Terragrunt plan failed for ${component} in ${env}"
             }
         }
         
         if (params.ACTION == 'apply') {
-            echo "Running Terragrunt apply for ${env}"
+            echo "Running Terragrunt apply for ${component} in ${env}"
             def applyResult = bat(script: "${WORKSPACE}\\bin\\terragrunt.exe apply -auto-approve", returnStatus: true)
             if (applyResult != 0) {
-                error "Terragrunt apply failed for ${env}"
+                error "Terragrunt apply failed for ${component} in ${env}"
+            }
+            
+            // Verificar estado del contenedor después del despliegue
+            if (component == 'postgresql') {
+                echo "Verificando conexión a PostgreSQL en ${env}..."
+                def checkPgResult = bat(script: "docker exec ${env == 'dev' ? 'postgres-dev' : 'postgres-prod'} pg_isready -U ${env == 'dev' ? 'dev_user' : 'prod_user'}", returnStatus: true)
+                if (checkPgResult != 0) {
+                    echo "Advertencia: PostgreSQL podría no estar listo aún. Esperando 10 segundos adicionales..."
+                    sleep(time: 10, unit: 'SECONDS')
+                    checkPgResult = bat(script: "docker exec ${env == 'dev' ? 'postgres-dev' : 'postgres-prod'} pg_isready -U ${env == 'dev' ? 'dev_user' : 'prod_user'}", returnStatus: true)
+                    if (checkPgResult != 0) {
+                        error "No se pudo conectar a PostgreSQL después de la espera adicional"
+                    }
+                }
+                echo "Conexión a PostgreSQL establecida correctamente"
+                
+                // Mostrar información de conexión
+                echo "PostgreSQL disponible en: localhost:${env == 'dev' ? '5432' : '5433'}"
+                echo "Base de datos: ${env == 'dev' ? 'dev_database' : 'prod_database'}"
+                echo "Usuario: ${env == 'dev' ? 'dev_user' : 'prod_user'}"
+            } else if (component == 'nginx') {
+                echo "Nginx disponible en: localhost:${env == 'dev' ? '8081' : '8082'}"
             }
         }
         
         if (params.ACTION == 'destroy') {
-            input message: "Are you sure you want to destroy the ${env} environment?", ok: 'Destroy'
-            echo "Running Terragrunt destroy for ${env}"
+            input message: "Are you sure you want to destroy the ${component} in ${env} environment?", ok: 'Destroy'
+            echo "Running Terragrunt destroy for ${component} in ${env}"
             def destroyResult = bat(script: "${WORKSPACE}\\bin\\terragrunt.exe destroy -auto-approve", returnStatus: true)
             if (destroyResult != 0) {
-                error "Terragrunt destroy failed for ${env}"
+                error "Terragrunt destroy failed for ${component} in ${env}"
             }
         }
     }
