@@ -11,9 +11,8 @@ pipeline {
             name: 'ACTION',
             choices: ['plan', 'apply', 'destroy'],
             description: 'Terragrunt action to perform'
-        )
-    }
-      options {
+        )    }
+    options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
         // Nota: Si deseas usar colores ANSI, necesitas instalar el plugin "AnsiColor" en Jenkins
@@ -25,9 +24,9 @@ pipeline {
                 checkout scm
             }
         }
-        
-        stage('Validate Tools') {
-            steps {                powershell '''
+          stage('Validate Tools') {
+            steps {
+                powershell '''
                     # Check if Terragrunt is available
                     if (-Not (Test-Path -Path "${env:WORKSPACE}\\bin\\terragrunt.exe")) {
                         Write-Error "Terragrunt executable not found at ${env:WORKSPACE}\\bin\\terragrunt.exe"
@@ -48,12 +47,12 @@ pipeline {
                 '''
             }
         }
-        
-        stage('Terragrunt Plan') {
+          stage('Terragrunt Plan') {
             when {
                 expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
             }
-            steps {                powershell '''
+            steps {
+                powershell '''
                     cd "${env:WORKSPACE}\\terragrunt-nginx"
                     
                     Write-Host "Running Terragrunt Plan for environment: ${env:ENVIRONMENT}"
@@ -66,12 +65,12 @@ pipeline {
                 '''
             }
         }
-        
-        stage('Terragrunt Apply') {
+          stage('Terragrunt Apply') {
             when {
                 expression { params.ACTION == 'apply' }
             }
-            steps {                powershell '''
+            steps {
+                powershell '''
                     cd "${env:WORKSPACE}\\terragrunt-nginx"
                     Write-Host "Running Terragrunt Apply for environment: ${env:ENVIRONMENT}"
                     & .\\run-terragrunt.ps1 -Command "apply" -Environment "${env:ENVIRONMENT}" -AutoApprove
@@ -87,10 +86,9 @@ pipeline {
         stage('Terragrunt Destroy') {
             when {
                 expression { params.ACTION == 'destroy' }
-            }
-            steps {
+            }            steps {
                 input message: "Are you sure you want to destroy the ${params.ENVIRONMENT} environment?", ok: 'Destroy'
-                  powershell '''
+                powershell '''
                     cd "${env:WORKSPACE}\\terragrunt-nginx"
                     Write-Host "Running Terragrunt Destroy for environment: ${env:ENVIRONMENT}"
                     & .\\run-terragrunt.ps1 -Command "destroy" -Environment "${env:ENVIRONMENT}" -AutoApprove
