@@ -24,6 +24,12 @@ pipeline {
         disableConcurrentBuilds()
     }
     
+    // Definir herramienta SonarQube Scanner
+    tools {
+        // Debe coincidir con el nombre configurado en "Manage Jenkins > Global Tool Configuration > SonarQube Scanner"
+        SonarQubeScanner 'SonarScanner'
+    }
+    
     stages {
         stage('Checkout') {
             steps {
@@ -37,24 +43,18 @@ pipeline {
             }
             steps {
                 echo "Running SonarQube analysis"
-                withSonarQubeEnv('SonarServer') {  // 'SonarServer' debe coincidir con el nombre configurado en Jenkins
-                    // Método alternativo usando el scanner directamente desde el servidor SonarQube
+                // 'SonarServer' debe coincidir con el nombre configurado en "Manage Jenkins > Configure System > SonarQube servers"
+                withSonarQubeEnv('SonarServer') {
                     bat """
                         echo "Executing SonarQube Scanner"
-                        set SONAR_SCANNER_OPTS=-Dsonar.projectKey=Terragrunt -Dsonar.projectName="Terragrunt Nginx Project" -Dsonar.projectVersion=1.0.%BUILD_NUMBER% -Dsonar.sources=. -Dsonar.exclusions=**/.terragrunt-cache/**,**/bin/**,**/.terraform/**
-                        
-                        curl -sSLo sonarscanner.zip %SONAR_HOST_URL%/static/cpp/build-wrapper-win-x86.zip
-                        powershell -command "Expand-Archive -Path sonarscanner.zip -DestinationPath ."
-                        
-                        build-wrapper-win-x86/build-wrapper-win-x86-64.exe --out-dir bw-output cmd /c echo Building project
-                        
-                        curl -sSLo sonar-scanner.zip %SONAR_HOST_URL%/static/cpp/sonar-scanner.zip
-                        powershell -command "Expand-Archive -Path sonar-scanner.zip -DestinationPath ."
-                        
-                        sonar-scanner/bin/sonar-scanner.bat -Dsonar.host.url=%SONAR_HOST_URL% -Dsonar.login=%SONAR_AUTH_TOKEN% -Dsonar.projectKey=Terragrunt -Dsonar.projectName="Terragrunt Nginx Project" -Dsonar.projectVersion=1.0.%BUILD_NUMBER% -Dsonar.sources=. -Dsonar.exclusions=**/.terragrunt-cache/**,**/bin/**,**/.terraform/**
+                        sonar-scanner.bat ^
+                        -Dsonar.projectKey=Terragrunt ^
+                        -Dsonar.projectName="Terragrunt Nginx Project" ^
+                        -Dsonar.projectVersion=1.0.%BUILD_NUMBER% ^
+                        -Dsonar.sources=. ^
+                        -Dsonar.exclusions=**/.terragrunt-cache/**,**/bin/**,**/.terraform/**
                     """
                 }
-                // Esperar a que el análisis se complete y verificar el Quality Gate
                 timeout(time: 5, unit: 'MINUTES') {
                     // El Quality Gate debe ser establecido como "abortPipeline: false" para evitar fallos en las primeras ejecuciones
                     waitForQualityGate abortPipeline: false
