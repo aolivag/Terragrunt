@@ -1,0 +1,23 @@
+# Terraform and Terragrunt files
+**/.terraform/
+**/.terragrunt-cache/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+*.terraform.lock.hcl
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude local .env files
+*.env
+
+# Exclude override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Exclude credentials files
+.envrc

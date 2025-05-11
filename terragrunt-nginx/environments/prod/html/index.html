@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Terragrunt Nginx Production</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            background-color: #f0f5f9;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        header {
+            background-color: #1b262c;
+            color: white;
+            padding: 1rem 0;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 1rem;
+        }
+        .content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        .environment {
+            background-color: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #1b262c;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Welcome to Nginx - Deployed with Terragrunt</h1>
+        </div>
+    </header>
+    <div class="container">
+        <div class="content">
+            <h2>Deployment Information</h2>
+            <p>Environment: <span class="environment">PRODUCTION</span></p>
+            
+            <div class="info">
+                <h3>Infrastructure Details:</h3>
+                <ul>
+                    <li>Terragrunt for configuration management</li>
+                    <li>Terraform for infrastructure as code</li>
+                    <li>Docker for containerization</li>
+                    <li>Nginx web server</li>
+                </ul>
+                <p>This is a production environment. All changes must follow proper approval process.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
