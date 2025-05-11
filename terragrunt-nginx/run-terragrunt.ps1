@@ -1,4 +1,20 @@
+# ==============================================================================
 # Script to run Terragrunt commands across all environments
+# ==============================================================================
+# 
+# Este script permite ejecutar comandos de Terragrunt en uno o todos los entornos.
+# 
+# Uso:
+#   .\run-terragrunt.ps1 -Command <comando> -Environment <entorno> [-AutoApprove]
+#
+# Ejemplos:
+#   .\run-terragrunt.ps1 -Command plan -Environment dev
+#   .\run-terragrunt.ps1 -Command apply -Environment prod -AutoApprove
+#   .\run-terragrunt.ps1 -Command destroy -Environment all -AutoApprove
+#
+# Nota: Este script es útil para ejecuciones manuales desde PowerShell.
+# Para integraciones con CI/CD como Jenkins, consultar el Jenkinsfile.
+# ==============================================================================
 param (
     [Parameter(Mandatory=$true)]
     [string]$Command,
@@ -10,8 +26,12 @@ param (
     [switch]$AutoApprove = $false
 )
 
-$terragruntPath = "C:\Users\Usuario\Desktop\Terragrunt\bin\terragrunt.exe"
-$basePath = "C:\Users\Usuario\Desktop\Terragrunt\terragrunt-nginx\environments"
+# Obtener la ruta base del script
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$rootDir = Split-Path -Parent $scriptDir
+
+$terragruntPath = Join-Path $rootDir "bin\terragrunt.exe"
+$basePath = Join-Path $scriptDir "environments"
 
 function Run-TerragruntCommand {
     param (
