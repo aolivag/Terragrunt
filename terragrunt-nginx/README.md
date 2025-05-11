@@ -7,6 +7,7 @@ This project demonstrates how to use Terragrunt to deploy Nginx containers using
 ```
 terragrunt-nginx/
 ├── terragrunt.hcl                 # Root Terragrunt configuration
+├── run-terragrunt.ps1             # PowerShell script for local execution
 ├── environments/                  # Environment-specific configurations
 │   ├── dev/
 │   │   ├── terragrunt.hcl         # Dev environment configuration
@@ -43,55 +44,58 @@ Each environment has its own:
 
 ## Usage
 
-### Initialize and Deploy
+### Method 1: Using PowerShell Script
 
-1. Navigate to the desired environment directory:
-   ```
-   cd environments/dev
-   ```
+You can use the included PowerShell script to run Terragrunt commands:
 
-2. Initialize Terragrunt:
-   ```
-   terragrunt init
-   ```
+```powershell
+# Planning changes for dev environment
+.\run-terragrunt.ps1 -Command plan -Environment dev
 
-3. Plan the deployment:
-   ```
-   terragrunt plan
-   ```
+# Applying changes to prod environment with auto-approval
+.\run-terragrunt.ps1 -Command apply -Environment prod -AutoApprove
 
-4. Apply the configuration:
-   ```
-   terragrunt apply
-   ```
-
-### Destroy Resources
-
-To remove the deployed resources:
+# Destroying all environments with auto-approval
+.\run-terragrunt.ps1 -Command destroy -Environment all -AutoApprove
 ```
+
+### Method 2: Direct Terragrunt Execution
+
+Navigate to the desired environment directory and run Terragrunt commands:
+
+```powershell
+# Navigate to environment directory
+cd environments/dev
+
+# Run Terragrunt commands
+terragrunt init
+terragrunt plan
+terragrunt apply
 terragrunt destroy
 ```
 
-## Customization
+### Method 3: Jenkins Pipeline
 
-### Adding a New Environment
+This project includes a Jenkinsfile in the root directory that allows you to run Terragrunt commands through a Jenkins pipeline. The pipeline supports:
 
-1. Create a new directory under `environments/`
-2. Copy and modify an existing environment's `terragrunt.hcl`
-3. Create a custom `html` directory with your content
-4. Deploy using the steps above
+- Running commands on specific environments or all environments
+- Planning, applying, and destroying infrastructure
+- Confirming destructive operations
 
-### Modifying the Nginx Configuration
+See the main README.md file for more details on setting up and using the Jenkins pipeline.
 
-Update the module in `modules/nginx-container` to customize the Nginx configuration.
+## Customizing Content
 
-## Output Variables
+To customize the Nginx content:
 
-After deployment, Terragrunt outputs:
-- `container_id`: The ID of the deployed container
-- `container_name`: The name of the container
-- `ip_address`: The address where the Nginx server is accessible
+1. Modify the HTML files in the `environments/[env]/html/` directories
+2. Run `terragrunt apply` to update the containers
 
-## Docker Healthcheck
+## Module Configuration
 
-The containers include a health check that verifies Nginx is running correctly.
+The Nginx container module accepts the following parameters:
+
+- `container_name`: Name of the Docker container
+- `external_port`: Port to expose on the host
+- `environment_variables`: Environment variables for the container
+- `content_path`: Path to the HTML content to mount

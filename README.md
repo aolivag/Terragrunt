@@ -8,6 +8,9 @@ Este proyecto implementa un contenedor Nginx utilizando Terragrunt y puede ejecu
 bin/
 	terragrunt.exe
 Jenkinsfile
+README.md
+docs/
+    AnsiColor-Plugin-Installation.md
 terragrunt-nginx/
 	README.md
 	run-terragrunt.ps1
@@ -35,10 +38,9 @@ terragrunt-nginx/
 Para ejecutar este pipeline, necesitas:
 
 1. Jenkins instalado en un entorno Windows
-2. Plugin de PowerShell instalado en Jenkins
-3. Plugin de Pipeline instalado en Jenkins
-4. Docker Desktop instalado y en ejecución
-5. Git instalado
+2. Plugin de Pipeline instalado en Jenkins
+3. Docker Desktop instalado y en ejecución
+4. Git instalado
 
 ## Configuración del Pipeline en Jenkins
 
@@ -60,13 +62,22 @@ Al ejecutar el pipeline, podrás seleccionar:
 El pipeline incluye los siguientes pasos:
 1. **Checkout**: Obtiene el código del repositorio
 2. **Validate Tools**: Verifica que Terragrunt y Docker estén disponibles
-3. **Terragrunt Plan**: Ejecuta `terragrunt plan` para mostrar los cambios a realizar
-4. **Terragrunt Apply**: Aplica los cambios (si seleccionaste `apply`)
-5. **Terragrunt Destroy**: Destruye la infraestructura (si seleccionaste `destroy`)
+3. **Process Environment**: Ejecuta el comando de Terragrunt seleccionado en el entorno especificado
 
 ## Seguridad
 
 El pipeline incluye una confirmación adicional antes de ejecutar el comando `destroy` para evitar eliminaciones accidentales.
+
+## Ejecución Local
+
+Además del pipeline de Jenkins, puedes ejecutar Terragrunt localmente usando el script PowerShell incluido:
+
+```powershell
+# Ejemplos de uso
+.\terragrunt-nginx\run-terragrunt.ps1 -Command plan -Environment dev
+.\terragrunt-nginx\run-terragrunt.ps1 -Command apply -Environment prod -AutoApprove
+.\terragrunt-nginx\run-terragrunt.ps1 -Command destroy -Environment all -AutoApprove
+```
 
 ## Mantenimiento
 
