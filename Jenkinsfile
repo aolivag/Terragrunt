@@ -12,6 +12,11 @@ pipeline {
             choices: ['plan', 'apply', 'destroy'],
             description: 'Terragrunt action to perform'
         )
+        booleanParam(
+            name: 'RUN_SONAR',
+            defaultValue: true,
+            description: 'Run SonarQube analysis'
+        )
     }
     
     options {
@@ -23,6 +28,31 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            when {
+                expression { return params.RUN_SONAR }
+            }
+            steps {
+                echo "Running SonarQube analysis"
+                withSonarQubeEnv('SonarServer') {  // 'SonarServer' debe coincidir con el nombre configurado en Jenkins
+                    bat '''
+                        echo "Executing SonarQube Scanner"
+                        sonar-scanner ^
+                        -Dsonar.projectKey=Terragrunt ^
+                        -Dsonar.projectName="Terragrunt Nginx Project" ^
+                        -Dsonar.projectVersion=1.0.${BUILD_NUMBER} ^
+                        -Dsonar.sources=. ^
+                        -Dsonar.exclusions=**/.terragrunt-cache/**,**/bin/**,**/.terraform/** ^
+                        -Dsonar.host.url=%SONAR_HOST_URL% ^
+                        -Dsonar.login=%SONAR_AUTH_TOKEN%
+                    '''
+                }
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
         
