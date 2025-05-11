@@ -29,10 +29,10 @@ pipeline {
         disableConcurrentBuilds()
     }
     
-    // Definir herramienta SonarQube Scanner
+    // Herramientas definidas para el pipeline
     tools {
-        // Debe coincidir con el nombre configurado en "Manage Jenkins > Global Tool Configuration > SonarQube Scanner"
-        SonarQubeScanner 'SonarScanner'
+        // Comentamos la herramienta SonarQube hasta que esté instalada y configurada
+        // SonarQubeScanner 'SonarScanner'
     }
     
     stages {
@@ -44,11 +44,17 @@ pipeline {
         
         stage('SonarQube Analysis') {
             when {
-                expression { return params.RUN_SONAR }
+                expression { return params.RUN_SONAR && false } // Desactivamos temporalmente con false
             }
             steps {
-                echo "Running SonarQube analysis"
-                // 'SonarServer' debe coincidir con el nombre configurado en "Manage Jenkins > Configure System > SonarQube servers"
+                echo "SonarQube analysis is currently disabled. To enable it:"
+                echo "1. Install SonarQube Scanner plugin in Jenkins"
+                echo "2. Configure SonarQube server in 'Manage Jenkins > Configure System'"
+                echo "3. Configure SonarQube Scanner in 'Manage Jenkins > Global Tool Configuration'"
+                echo "4. Edit Jenkinsfile to remove the '&& false' condition and uncomment the SonarQubeScanner tool"
+                
+                // Código comentado hasta que SonarQube esté configurado
+                /*
                 withSonarQubeEnv('SonarServer') {
                     bat """
                         echo "Executing SonarQube Scanner"
@@ -61,9 +67,9 @@ pipeline {
                     """
                 }
                 timeout(time: 5, unit: 'MINUTES') {
-                    // El Quality Gate debe ser establecido como "abortPipeline: false" para evitar fallos en las primeras ejecuciones
                     waitForQualityGate abortPipeline: false
                 }
+                */
             }
         }
         
