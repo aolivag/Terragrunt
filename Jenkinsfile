@@ -17,6 +17,11 @@ pipeline {
             choices: ['all', 'nginx', 'postgresql'],
             description: 'Component to deploy (NGINX, PostgreSQL or both)'
         )
+        booleanParam(
+            name: 'RUN_SONAR',
+            defaultValue: true,
+            description: 'Run SonarQube analysis'
+        )
     }
     
     options {
@@ -24,10 +29,41 @@ pipeline {
         disableConcurrentBuilds()
     }
     
+    // Definir herramienta SonarQube Scanner
+    tools {
+        // Debe coincidir con el nombre configurado en "Manage Jenkins > Global Tool Configuration > SonarQube Scanner"
+        SonarQubeScanner 'SonarScanner'
+    }
+    
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            when {
+                expression { return params.RUN_SONAR }
+            }
+            steps {
+                echo "Running SonarQube analysis"
+                // 'SonarServer' debe coincidir con el nombre configurado en "Manage Jenkins > Configure System > SonarQube servers"
+                withSonarQubeEnv('SonarServer') {
+                    bat """
+                        echo "Executing SonarQube Scanner"
+                        sonar-scanner.bat ^
+                        -Dsonar.projectKey=Terragrunt ^
+                        -Dsonar.projectName="Terragrunt Nginx Project" ^
+                        -Dsonar.projectVersion=1.0.%BUILD_NUMBER% ^
+                        -Dsonar.sources=. ^
+                        -Dsonar.exclusions=**/.terragrunt-cache/**,**/bin/**,**/.terraform/**
+                    """
+                }
+                timeout(time: 5, unit: 'MINUTES') {
+                    // El Quality Gate debe ser establecido como "abortPipeline: false" para evitar fallos en las primeras ejecuciones
+                    waitForQualityGate abortPipeline: false
+                }
             }
         }
         
