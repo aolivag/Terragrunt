@@ -17,7 +17,6 @@ pipeline {
     options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
-        // Nota: Si deseas usar colores ANSI, necesitas instalar el plugin "AnsiColor" en Jenkins
     }
     
     stages {
@@ -29,85 +28,28 @@ pipeline {
         
         stage('Validate Tools') {
             steps {
-                bat '''
-                    @echo off
-                    echo Checking if Terragrunt is available...
-                    if not exist "%WORKSPACE%\\bin\\terragrunt.exe" (
-                        echo Terragrunt executable not found at %WORKSPACE%\\bin\\terragrunt.exe
-                        exit /b 1
-                    )
-                    
-                    echo Terragrunt version:
-                    "%WORKSPACE%\\bin\\terragrunt.exe" --version
-                    
-                    echo Checking Docker connectivity:
-                    docker version
-                    if %ERRORLEVEL% neq 0 (
-                        echo Docker not available or not running
-                        exit /b 1
-                    )
-                '''
+                echo "Checking if Terragrunt is available"
+                fileExists("${WORKSPACE}\\bin\\terragrunt.exe")
+                echo "Terragrunt found, checking version:"
+                bat(script: "${WORKSPACE}\\bin\\terragrunt.exe --version", returnStatus: true)
+                
+                echo "Checking Docker connectivity"
+                bat(script: "docker version", returnStatus: true)
             }
         }
         
-        stage('Terragrunt Plan') {
-            when {
-                expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
-            }
+        stage('Process Environment') {
             steps {
-                bat '''
-                    @echo off
-                    cd "%WORKSPACE%\\terragrunt-nginx\\environments\\%ENVIRONMENT%"
-                    
-                    echo Running Terragrunt Plan for environment: %ENVIRONMENT%
-                    "%WORKSPACE%\\bin\\terragrunt.exe" plan
-                    
-                    if %ERRORLEVEL% neq 0 (
-                        echo Terragrunt plan failed
-                        exit /b 1
-                    )
-                '''
-            }
-        }
-        
-        stage('Terragrunt Apply') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
-            steps {
-                bat '''
-                    @echo off
-                    cd "%WORKSPACE%\\terragrunt-nginx\\environments\\%ENVIRONMENT%"
-                    
-                    echo Running Terragrunt Apply for environment: %ENVIRONMENT%
-                    "%WORKSPACE%\\bin\\terragrunt.exe" apply -auto-approve
-                    
-                    if %ERRORLEVEL% neq 0 (
-                        echo Terragrunt apply failed
-                        exit /b 1
-                    )
-                '''
-            }
-        }
-        
-        stage('Terragrunt Destroy') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
-            steps {
-                input message: "Are you sure you want to destroy the ${params.ENVIRONMENT} environment?", ok: 'Destroy'
-                bat '''
-                    @echo off
-                    cd "%WORKSPACE%\\terragrunt-nginx\\environments\\%ENVIRONMENT%"
-                    
-                    echo Running Terragrunt Destroy for environment: %ENVIRONMENT%
-                    "%WORKSPACE%\\bin\\terragrunt.exe" destroy -auto-approve
-                    
-                    if %ERRORLEVEL% neq 0 (
-                        echo Terragrunt destroy failed
-                        exit /b 1
-                    )
-                '''
+                script {
+                    if (params.ENVIRONMENT == 'all') {
+                        echo "Processing all environments"
+                        processEnvironment('dev')
+                        processEnvironment('prod')
+                    } else {
+                        echo "Processing environment: ${params.ENVIRONMENT}"
+                        processEnvironment(params.ENVIRONMENT)
+                    }
+                }
             }
         }
     }
@@ -116,13 +58,43 @@ pipeline {
         always {
             cleanWs()
         }
-        
         success {
             echo "Pipeline executed successfully!"
         }
-        
         failure {
             echo "Pipeline execution failed"
+        }
+    }
+}
+
+def processEnvironment(String env) {
+    dir("${WORKSPACE}\\terragrunt-nginx\\environments\\${env}") {
+        echo "Current directory: ${pwd()}"
+        echo "Running Terragrunt in ${env} environment"
+        
+        if (params.ACTION == 'plan' || params.ACTION == 'apply') {
+            echo "Running Terragrunt plan for ${env}"
+            def planResult = bat(script: "${WORKSPACE}\\bin\\terragrunt.exe plan", returnStatus: true)
+            if (planResult != 0) {
+                error "Terragrunt plan failed for ${env}"
+            }
+        }
+        
+        if (params.ACTION == 'apply') {
+            echo "Running Terragrunt apply for ${env}"
+            def applyResult = bat(script: "${WORKSPACE}\\bin\\terragrunt.exe apply -auto-approve", returnStatus: true)
+            if (applyResult != 0) {
+                error "Terragrunt apply failed for ${env}"
+            }
+        }
+        
+        if (params.ACTION == 'destroy') {
+            input message: "Are you sure you want to destroy the ${env} environment?", ok: 'Destroy'
+            echo "Running Terragrunt destroy for ${env}"
+            def destroyResult = bat(script: "${WORKSPACE}\\bin\\terragrunt.exe destroy -auto-approve", returnStatus: true)
+            if (destroyResult != 0) {
+                error "Terragrunt destroy failed for ${env}"
+            }
         }
     }
 }
