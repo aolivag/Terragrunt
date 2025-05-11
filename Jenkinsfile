@@ -3,7 +3,8 @@ pipeline {
     
     parameters {
         choice(
-            name: 'ENVIRONMENT',            choices: ['dev', 'prod', 'all'],
+            name: 'ENVIRONMENT',
+            choices: ['dev', 'prod', 'all'],
             description: 'Environment to deploy'
         )
         choice(
@@ -12,6 +13,7 @@ pipeline {
             description: 'Terragrunt action to perform'
         )
     }
+    
     options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
@@ -22,8 +24,10 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-            }        }
-          stage('Validate Tools') {
+            }
+        }
+        
+        stage('Validate Tools') {
             steps {
                 bat '''
                     @echo off
@@ -43,43 +47,50 @@ pipeline {
                         exit /b 1
                     )
                 '''
-            }        }
-          stage('Terragrunt Plan') {
+            }
+        }
+        
+        stage('Terragrunt Plan') {
             when {
                 expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
             }
             steps {
                 bat '''
                     @echo off
-                    cd "%WORKSPACE%\\terragrunt-nginx"
+                    cd "%WORKSPACE%\\terragrunt-nginx\\environments\\%ENVIRONMENT%"
                     
                     echo Running Terragrunt Plan for environment: %ENVIRONMENT%
-                    powershell -Command ".\\run-terragrunt.ps1 -Command 'plan' -Environment '%ENVIRONMENT%'"
+                    "%WORKSPACE%\\bin\\terragrunt.exe" plan
                     
                     if %ERRORLEVEL% neq 0 (
                         echo Terragrunt plan failed
                         exit /b 1
                     )
                 '''
-            }        }
-          stage('Terragrunt Apply') {
+            }
+        }
+        
+        stage('Terragrunt Apply') {
             when {
                 expression { params.ACTION == 'apply' }
             }
             steps {
                 bat '''
                     @echo off
-                    cd "%WORKSPACE%\\terragrunt-nginx"
+                    cd "%WORKSPACE%\\terragrunt-nginx\\environments\\%ENVIRONMENT%"
+                    
                     echo Running Terragrunt Apply for environment: %ENVIRONMENT%
-                    powershell -Command ".\\run-terragrunt.ps1 -Command 'apply' -Environment '%ENVIRONMENT%' -AutoApprove"
+                    "%WORKSPACE%\\bin\\terragrunt.exe" apply -auto-approve
                     
                     if %ERRORLEVEL% neq 0 (
                         echo Terragrunt apply failed
                         exit /b 1
                     )
                 '''
-            }        }
-          stage('Terragrunt Destroy') {
+            }
+        }
+        
+        stage('Terragrunt Destroy') {
             when {
                 expression { params.ACTION == 'destroy' }
             }
@@ -87,9 +98,10 @@ pipeline {
                 input message: "Are you sure you want to destroy the ${params.ENVIRONMENT} environment?", ok: 'Destroy'
                 bat '''
                     @echo off
-                    cd "%WORKSPACE%\\terragrunt-nginx"
+                    cd "%WORKSPACE%\\terragrunt-nginx\\environments\\%ENVIRONMENT%"
+                    
                     echo Running Terragrunt Destroy for environment: %ENVIRONMENT%
-                    powershell -Command ".\\run-terragrunt.ps1 -Command 'destroy' -Environment '%ENVIRONMENT%' -AutoApprove"
+                    "%WORKSPACE%\\bin\\terragrunt.exe" destroy -auto-approve
                     
                     if %ERRORLEVEL% neq 0 (
                         echo Terragrunt destroy failed
