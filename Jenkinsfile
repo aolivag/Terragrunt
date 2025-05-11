@@ -8,10 +8,10 @@ pipeline {
             description: 'Environment to deploy'
         )
         choice(
-            name: 'ACTION',
-            choices: ['plan', 'apply', 'destroy'],
+            name: 'ACTION',            choices: ['plan', 'apply', 'destroy'],
             description: 'Terragrunt action to perform'
-        )    }
+        )
+    }
     options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
@@ -22,9 +22,9 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-            }
-        }
-          stage('Validate Tools') {
+            }        }
+        
+        stage('Validate Tools') {
             steps {
                 powershell '''
                     # Check if Terragrunt is available
@@ -45,9 +45,9 @@ pipeline {
                         exit 1
                     }
                 '''
-            }
-        }
-          stage('Terragrunt Plan') {
+            }        }
+        
+        stage('Terragrunt Plan') {
             when {
                 expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
             }
@@ -63,9 +63,9 @@ pipeline {
                         exit 1
                     }
                 '''
-            }
-        }
-          stage('Terragrunt Apply') {
+            }        }
+        
+        stage('Terragrunt Apply') {
             when {
                 expression { params.ACTION == 'apply' }
             }
@@ -80,13 +80,13 @@ pipeline {
                         exit 1
                     }
                 '''
-            }
-        }
+            }        }
         
         stage('Terragrunt Destroy') {
             when {
                 expression { params.ACTION == 'destroy' }
-            }            steps {
+            }
+            steps {
                 input message: "Are you sure you want to destroy the ${params.ENVIRONMENT} environment?", ok: 'Destroy'
                 powershell '''
                     cd "${env:WORKSPACE}\\terragrunt-nginx"
