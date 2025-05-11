@@ -26,11 +26,14 @@ generate "provider" {
   contents  = <<EOF
 terraform {
   required_version = ">= ${local.terraform_version}"
-  
-  required_providers {
+    required_providers {
     docker = {
       source  = "kreuzwerker/docker"
       version = "~> 3.0.0"
+    }
+    vault = {
+      source  = "hashicorp/vault"
+      version = "~> 3.15.0"
     }
   }
 }
@@ -38,6 +41,9 @@ terraform {
 provider "docker" {
   host = "npipe:////.//pipe//docker_engine"  # For Windows Docker Desktop
 }
+
+# Vault provider is configured in each module that needs it, 
+# since it depends on the vault container being available
 EOF
 }
 

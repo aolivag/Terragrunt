@@ -10,7 +10,6 @@ inputs = {
   container_name = "postgres-prod"
   external_port  = 5433  // Using a different port for production to avoid conflicts
   environment_variables = {
-    "POSTGRES_PASSWORD" = "Prod_PostgresPassword123!"  // More secure password for production
     "POSTGRES_USER"     = "postgres"
     "POSTGRES_DB"       = "app_database_prod"
     "PGDATA"            = "/var/lib/postgresql/data/pgdata"
@@ -23,8 +22,13 @@ inputs = {
   }
   postgres_version  = "15"
   postgres_user     = "postgres"
-  postgres_password = "Prod_PostgresPassword123!"  // Same secure password 
   postgres_db       = "app_database_prod"
+  
+  // Vault settings for password retrieval
+  use_vault         = true
+  vault_address     = "http://localhost:8200"
+  vault_token       = "VAULT_TERRAGRUNT_SECRET_TOKEN_2025"
+  vault_secret_path = "postgres/prod"
   
   // Path for data persistence
   data_path = "${get_terragrunt_dir()}/data"

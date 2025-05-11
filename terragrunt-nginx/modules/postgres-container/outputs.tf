@@ -15,6 +15,6 @@ output "ip_address" {
 
 output "connection_string" {
   description = "PostgreSQL connection string"
-  value       = "postgresql://${var.postgres_user}:${var.postgres_password}@localhost:${var.external_port}/${var.postgres_db}"
+  value       = "postgresql://${var.postgres_user}:${local.effective_password != null ? local.effective_password : "password_placeholder"}@localhost:${var.external_port}/${var.postgres_db}"
   sensitive   = true
 }
