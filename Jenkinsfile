@@ -3,12 +3,12 @@ pipeline {
     
     parameters {
         choice(
-            name: 'ENVIRONMENT',
-            choices: ['dev', 'prod', 'all'],
+            name: 'ENVIRONMENT',            choices: ['dev', 'prod', 'all'],
             description: 'Environment to deploy'
         )
         choice(
-            name: 'ACTION',            choices: ['plan', 'apply', 'destroy'],
+            name: 'ACTION',
+            choices: ['plan', 'apply', 'destroy'],
             description: 'Terragrunt action to perform'
         )
     }
@@ -23,80 +23,78 @@ pipeline {
             steps {
                 checkout scm
             }        }
-        
-        stage('Validate Tools') {
+          stage('Validate Tools') {
             steps {
-                powershell '''
-                    # Check if Terragrunt is available
-                    if (-Not (Test-Path -Path "${env:WORKSPACE}\\bin\\terragrunt.exe")) {
-                        Write-Error "Terragrunt executable not found at ${env:WORKSPACE}\\bin\\terragrunt.exe"
-                        exit 1
-                    }
+                bat '''
+                    @echo off
+                    echo Checking if Terragrunt is available...
+                    if not exist "%WORKSPACE%\\bin\\terragrunt.exe" (
+                        echo Terragrunt executable not found at %WORKSPACE%\\bin\\terragrunt.exe
+                        exit /b 1
+                    )
                     
-                    # Display versions
-                    Write-Host "Terragrunt version:"
-                    & "${env:WORKSPACE}\\bin\\terragrunt.exe" --version
+                    echo Terragrunt version:
+                    "%WORKSPACE%\\bin\\terragrunt.exe" --version
                     
-                    # Check Docker connectivity
-                    Write-Host "Checking Docker connectivity:"
+                    echo Checking Docker connectivity:
                     docker version
-                    if ($LASTEXITCODE -ne 0) {
-                        Write-Error "Docker not available or not running"
-                        exit 1
-                    }
+                    if %ERRORLEVEL% neq 0 (
+                        echo Docker not available or not running
+                        exit /b 1
+                    )
                 '''
             }        }
-        
-        stage('Terragrunt Plan') {
+          stage('Terragrunt Plan') {
             when {
                 expression { params.ACTION == 'plan' || params.ACTION == 'apply' }
             }
             steps {
-                powershell '''
-                    cd "${env:WORKSPACE}\\terragrunt-nginx"
+                bat '''
+                    @echo off
+                    cd "%WORKSPACE%\\terragrunt-nginx"
                     
-                    Write-Host "Running Terragrunt Plan for environment: ${env:ENVIRONMENT}"
-                    & .\\run-terragrunt.ps1 -Command "plan" -Environment "${env:ENVIRONMENT}"
+                    echo Running Terragrunt Plan for environment: %ENVIRONMENT%
+                    powershell -Command ".\\run-terragrunt.ps1 -Command 'plan' -Environment '%ENVIRONMENT%'"
                     
-                    if ($LASTEXITCODE -ne 0) {
-                        Write-Error "Terragrunt plan failed"
-                        exit 1
-                    }
+                    if %ERRORLEVEL% neq 0 (
+                        echo Terragrunt plan failed
+                        exit /b 1
+                    )
                 '''
             }        }
-        
-        stage('Terragrunt Apply') {
+          stage('Terragrunt Apply') {
             when {
                 expression { params.ACTION == 'apply' }
             }
             steps {
-                powershell '''
-                    cd "${env:WORKSPACE}\\terragrunt-nginx"
-                    Write-Host "Running Terragrunt Apply for environment: ${env:ENVIRONMENT}"
-                    & .\\run-terragrunt.ps1 -Command "apply" -Environment "${env:ENVIRONMENT}" -AutoApprove
+                bat '''
+                    @echo off
+                    cd "%WORKSPACE%\\terragrunt-nginx"
+                    echo Running Terragrunt Apply for environment: %ENVIRONMENT%
+                    powershell -Command ".\\run-terragrunt.ps1 -Command 'apply' -Environment '%ENVIRONMENT%' -AutoApprove"
                     
-                    if ($LASTEXITCODE -ne 0) {
-                        Write-Error "Terragrunt apply failed"
-                        exit 1
-                    }
+                    if %ERRORLEVEL% neq 0 (
+                        echo Terragrunt apply failed
+                        exit /b 1
+                    )
                 '''
             }        }
-        
-        stage('Terragrunt Destroy') {
+          stage('Terragrunt Destroy') {
             when {
                 expression { params.ACTION == 'destroy' }
             }
             steps {
                 input message: "Are you sure you want to destroy the ${params.ENVIRONMENT} environment?", ok: 'Destroy'
-                powershell '''
-                    cd "${env:WORKSPACE}\\terragrunt-nginx"
-                    Write-Host "Running Terragrunt Destroy for environment: ${env:ENVIRONMENT}"
-                    & .\\run-terragrunt.ps1 -Command "destroy" -Environment "${env:ENVIRONMENT}" -AutoApprove
+                bat '''
+                    @echo off
+                    cd "%WORKSPACE%\\terragrunt-nginx"
+                    echo Running Terragrunt Destroy for environment: %ENVIRONMENT%
+                    powershell -Command ".\\run-terragrunt.ps1 -Command 'destroy' -Environment '%ENVIRONMENT%' -AutoApprove"
                     
-                    if ($LASTEXITCODE -ne 0) {
-                        Write-Error "Terragrunt destroy failed"
-                        exit 1
-                    }
+                    if %ERRORLEVEL% neq 0 (
+                        echo Terragrunt destroy failed
+                        exit /b 1
+                    )
                 '''
             }
         }
